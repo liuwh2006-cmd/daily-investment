@@ -1,0 +1,46 @@
+name: Deploy Daily Investment Briefing
+
+on:
+  # 允许手动触发
+  workflow_dispatch:
+  # 每天北京时间 5:30 自动运行
+  schedule:
+    - cron: '30 21 * * *'  # UTC 21:30 = 北京时间 5:30
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Check if index.html exists
+        id: check_file
+        run: |
+          if [ -f "index.html" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>每日投资简报</title></head><body style='font-family: system-ui; max-width: 800px; margin: 50px auto; padding: 20px;'><h1>🕐 简报生成中...</h1><p>每日投资简报将于北京时间 5:00-5:30 之间生成。</p><p>如果看到这个页面，说明今天的简报尚未生成或推送成功。</p></body></html>" > index.html
+          fi
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
